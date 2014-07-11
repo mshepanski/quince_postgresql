@@ -1,0 +1,21 @@
+import path ;
+
+path-constant here : . ;
+
+lib libpq : : <name>$(libpq-name) <search>$(libpq-lib-dir) ;
+
+requirements =
+	<include>$(here)/include
+	<include>$(libpq-include-dir)
+	;
+
+project : usage-requirements $(requirements) ;
+
+alias sources : [ path.glob-tree $(here)/src : *.cpp ] ;
+
+alias libs : /quince//quince libpq/<link>shared ;
+
+lib quince-postgresql
+	: sources libs
+	: $(requirements) <threading>multi <toolset>msvc:<link>static
+	;
