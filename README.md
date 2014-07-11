@@ -1,4 +1,4 @@
 quince_postgresql
 =================
 
-QUeries IN C++ Expressions
+quince backend library for PostgreSQL
