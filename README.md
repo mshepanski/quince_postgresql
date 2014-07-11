@@ -1,4 +1,4 @@
 quince_postgresql
 =================
 
-quince backend library for PostgreSQL
+Quince backend library for PostgreSQL
