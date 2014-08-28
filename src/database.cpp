@@ -76,7 +76,7 @@ database::database(
     const std::string &default_schema,
     const std::string &port,
     const optional<isolation_level> level,
-    boost::optional<const mapping_customization &> customization_for_db
+    const boost::optional<mapping_customization> &customization_for_db
 ) :
     quince::database(
         clone_or_null(customization_for_db),

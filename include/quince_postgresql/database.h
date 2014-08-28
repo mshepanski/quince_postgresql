@@ -43,7 +43,7 @@ public:
         const std::string &default_schema = "",
         const std::string &port = "",
         const boost::optional<isolation_level> = boost::none,
-        boost::optional<const quince::mapping_customization &> customization_for_db = boost::none
+        const boost::optional<quince::mapping_customization> &customization_for_db = boost::none
     );
 
     virtual ~database();
