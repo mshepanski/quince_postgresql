@@ -4,6 +4,7 @@
 //          http://www.boost.org/LICENSE_1_0.txt)
 
 #include <pg_config_manual.h>  // for NAMEDATALEN
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <quince/exceptions.h>
 #include <quince/detail/compiler_specific.h>
 #include <quince/detail/session.h>
@@ -11,11 +12,13 @@
 #include <quince/mappers/direct_mapper.h>
 #include <quince/mappers/numeric_cast_mapper.h>
 #include <quince/mappers/reinterpret_cast_mapper.h>
+#include <quince/mappers/detail/abstract_mapper.h>
 #include <quince/mappers/serial_mapper.h>
 #include <quince_postgresql/database.h>
 #include <quince_postgresql/detail/dialect_sql.h>
 
 using boost::optional;
+using boost::posix_time::ptime;
 using namespace quince;
 using std::dynamic_pointer_cast;
 using std::make_unique;
@@ -25,9 +28,42 @@ using std::unique_ptr;
 using std::vector;
 
 
+QUINCE_SUPPRESS_MSVC_DOMINANCE_WARNING
+
 namespace quince_postgresql {
 
 namespace {
+    class ptime_mapper : public abstract_mapper<ptime>, public direct_mapper<timestamp>
+    {
+    public:
+        explicit ptime_mapper(const optional<string> &name, const mapper_factory &creator) :
+            abstract_mapper_base(name),
+            abstract_mapper<ptime>(name),
+            direct_mapper<timestamp>(name, creator)
+        {}
+
+        virtual std::unique_ptr<cloneable>
+        clone_impl() const override {
+            return std::make_unique<ptime_mapper>(*this);
+        }
+
+        virtual void from_row(const row &src, ptime &dest) const override {
+            timestamp text;
+            direct_mapper<timestamp>::from_row(src, text);
+            dest = boost::posix_time::time_from_string(text);
+        }
+
+        virtual void to_row(const ptime &src, row &dest) const override {
+            const timestamp text(boost::posix_time::to_simple_string(src));
+            direct_mapper<timestamp>::to_row(text, dest);
+        }
+
+    protected:
+        virtual void build_match_tester(const query_base &qb, predicate &result) const override {
+            abstract_mapper<ptime>::build_match_tester(qb, result);
+        }
+    };
+
     struct customization_for_dbms : mapping_customization {
         customization_for_dbms() {
             customize<bool, direct_mapper<bool>>();
@@ -44,6 +80,7 @@ namespace {
             customize<std::string, direct_mapper<std::string>>();
             customize<byte_vector, direct_mapper<byte_vector>>();
             customize<serial, serial_mapper>();
+            customize<ptime, ptime_mapper>();
         }
     };
 
@@ -164,6 +201,7 @@ database::column_type_name(column_type type) const {
         case column_type::floating_point:   return "real";
         case column_type::double_precision: return "double precision";
         case column_type::string:           return "text";
+        case column_type::timestamp:        return "timestamp";
         case column_type::byte_vector:      return "bytea";
         default:                            abort();
     }
@@ -192,3 +230,5 @@ database::max_column_name_length() const {
 }
 
 }
+
+QUINCE_UNSUPPRESS_MSVC_WARNING

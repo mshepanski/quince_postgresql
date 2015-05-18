@@ -7,6 +7,7 @@ lib libpq : : <name>$(libpq-name) <search>$(libpq-lib-dir) ;
 requirements =
 	<include>$(here)/include
 	<include>$(libpq-include-dir)
+	<library>/boost//date_time
 	;
 
 project : usage-requirements $(requirements) ;

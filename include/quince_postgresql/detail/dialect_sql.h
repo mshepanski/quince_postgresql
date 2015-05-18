@@ -20,6 +20,8 @@ public:
 
     virtual std::unique_ptr<quince::cloneable> clone_impl() const override;
 
+    virtual void write_value(const quince::cell &value) override;
+
     virtual void write_no_limit() override  {}
 
     virtual void write_collective_comparison(
@@ -42,6 +44,8 @@ public:
 
     virtual void write_distinct(const std::vector<const quince::abstract_mapper_base*> &) override;
     using quince::sql::write_distinct;
+
+    virtual void write_select_list_item(const quince::column_mapper &) override;
 
     void
     write_add_columns(
