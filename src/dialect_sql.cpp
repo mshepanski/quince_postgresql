@@ -34,17 +34,6 @@ dialect_sql::clone_impl() const {
 }
 
 void
-dialect_sql::write_value(const cell &value) {
-    if (value.type() != column_type::timestamp)
-        sql::write_value(value);
-    else {
-        const cell string_cell(column_type::string, false, value.data(), value.size());
-        sql::write_value(string_cell);
-        write("::timestamp");
-    }
-}
-
-void
 dialect_sql::write_collective_comparison(relation r, const abstract_column_sequence &lhs, const collective_base &rhs) {
     const size_t n_cols = lhs.size();
     assert(n_cols != 0);
@@ -234,9 +223,24 @@ dialect_sql::write_set_session_characteristics(isolation_level isolation) {
     }
 }
 
+void
+dialect_sql::attach_value(const cell &value) {
+    if (value.type() == column_type::timestamp)
+        sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
+    else
+        sql::attach_value(value);
+}
+
 string
 dialect_sql::next_placeholder() {
     return "$" + to_string(++_next_placeholder_serial);
+}
+
+string
+dialect_sql::next_value_reference(const cell &value) {
+    string result = sql::next_value_reference(value);
+    if (value.type() == column_type::timestamp)  result += "::timestamp";
+    return result;
 }
 
 }

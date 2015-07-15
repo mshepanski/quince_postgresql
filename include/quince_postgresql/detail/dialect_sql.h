@@ -20,8 +20,6 @@ public:
 
     virtual std::unique_ptr<quince::cloneable> clone_impl() const override;
 
-    virtual void write_value(const quince::cell &value) override;
-
     virtual void write_no_limit() override  {}
 
     virtual void write_collective_comparison(
@@ -74,8 +72,6 @@ public:
         boost::optional<quince::column_id> generated_key
     ) override;
 
-    virtual std::string next_placeholder() override;
-
     void write_create_schema(const std::string &);
 
     void write_fetch(const std::string &cursor_name, uint32_t n_rows);
@@ -84,6 +80,10 @@ public:
     void write_set_session_characteristics(isolation_level);
 
 private:
+    virtual void attach_value(const quince::cell &) override;
+    virtual std::string next_placeholder() override;
+    virtual std::string next_value_reference(const quince::cell &) override;
+
     uint32_t _next_placeholder_serial;
 };
 
