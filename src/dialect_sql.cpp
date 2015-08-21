@@ -3,10 +3,12 @@
 //    (See accompanying file ../LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
+#include <boost/date_time/posix_time/ptime.hpp>
 #include <quince/detail/binomen.h>
 #include <quince/mappers/detail/persistent_column_mapper.h>
 #include <quince/exprn_mappers/detail/exprn_mapper.h>
 #include <quince/exprn_mappers/collective.h>
+#include <quince/mappers/optional_mapper.h>
 #include <quince/detail/compiler_specific.h>
 #include <quince/query.h>
 #include <quince_postgresql/database.h>
@@ -14,6 +16,7 @@
 
 using namespace quince;
 using boost::optional;
+using boost::posix_time::ptime;
 using std::make_unique;
 using std::string;
 using std::to_string;
@@ -126,19 +129,39 @@ dialect_sql::write_distinct(const vector<const abstract_mapper_base *> &distinct
     write(" ");
 }
 
+namespace {
+    template<typename T>
+    bool
+    maps_to(const column_mapper &c) {
+        return dynamic_cast<const abstract_mapper<T>*>(&c) != nullptr;
+    }
+
+    bool
+    is_timestamp_column(const column_mapper &c) {
+        return maps_to<timestamp>(c)
+            || maps_to<ptime>(c)
+            || maps_to<optional<timestamp>>(c)
+            || maps_to<optional<ptime>>(c);
+    }
+}
+
+void
+dialect_sql::write_timestamp_select_list_item(const column_mapper &c) {
+    if (alias_is_defined(c.id())) {
+        write(c.alias() + "::" + column_type_name(column_type::string));
+    }
+    else {
+        write_cast(c, column_type::string);
+        write(" AS " + c.alias());
+    }
+}
+
 void
 dialect_sql::write_select_list_item(const column_mapper &c) {
-    if (nested_select() || dynamic_cast<const abstract_mapper<timestamp> *>(&c) == nullptr)
+    if (is_timestamp_column(c) && !nested_select())
+        write_timestamp_select_list_item(c);
+    else
         sql::write_select_list_item(c);
-    else {
-        if (alias_is_defined(c.id())) {
-            write(c.alias() + "::" + column_type_name(column_type::string));
-        }
-        else {
-            write_cast(c, column_type::string);
-            write(" AS " + c.alias());
-        }
-    }
 }
 
 void
