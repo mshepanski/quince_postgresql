@@ -21,7 +21,6 @@ using boost::optional;
 using boost::posix_time::ptime;
 using namespace quince;
 using std::dynamic_pointer_cast;
-using std::make_unique;
 using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
@@ -44,7 +43,7 @@ namespace {
 
         virtual std::unique_ptr<cloneable>
         clone_impl() const override {
-            return std::make_unique<ptime_mapper>(*this);
+            return quince::make_unique<ptime_mapper>(*this);
         }
 
         virtual void from_row(const row &src, ptime &dest) const override {
@@ -103,7 +102,7 @@ database::database(
 ) :
     quince::database(
         clone_or_null(customization_for_db),
-        std::make_unique<customization_for_dbms>()
+        quince::make_unique<customization_for_dbms>()
     ),
     _spec({
         host,
@@ -158,12 +157,12 @@ unique_ptr<session_impl>
 database::make_schemaless_session() const {
     session_impl::spec s = _spec;
     s._default_schema = boost::none;
-    return make_unique<session_impl>(*this, s);
+    return quince::make_unique<session_impl>(*this, s);
 }
 
 new_session
 database::make_session() const {
-    new_session result = make_unique<session_impl>(*this, _spec);
+    new_session result = quince::make_unique<session_impl>(*this, _spec);
     if (const optional<string> default_schema = get_default_enclosure()) {
         const unique_ptr<sql> cmd = make_sql();
         cmd->write_set_search_path(*default_schema);
@@ -214,7 +213,7 @@ database::get_session_impl() const {
 
 unique_ptr<dialect_sql>
 database::make_dialect_sql() const {
-    return make_unique<dialect_sql>(*this);
+    return quince::make_unique<dialect_sql>(*this);
 }
 
 column_type

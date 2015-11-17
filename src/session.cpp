@@ -24,7 +24,6 @@ using boost::format;
 using boost::optional;
 using namespace quince;
 using std::dynamic_pointer_cast;
-using std::make_unique;
 using std::shared_ptr;
 using std::string;
 using std::stringstream;
@@ -206,7 +205,7 @@ namespace {
         next() {
             if (at_end())  return nullptr;
 
-            unique_ptr<row> result = make_unique<row>(&_database);
+            unique_ptr<row> result = quince::make_unique<row>(&_database);
 
             for (uint32_t i = 0; i < _n_cols; i++) {
                 const optional<column_type> col_type(
@@ -251,7 +250,7 @@ public:
         _conn(conn),
         _send(send),
         _epilogue(epilogue),
-        _current(make_unique<query_result>(_database, fetch())),
+        _current(quince::make_unique<query_result>(_database, fetch())),
         _exhausted(false)
     {
         const_cast<dialect_sql &>(*_sql_fetch).write_fetch(cursor_name, fetch_size);
@@ -286,7 +285,7 @@ public:
             else if (_current && !_current->at_end())
                 result = _current->next();
             else if (! _backlog.empty())
-                _current = make_unique<query_result>(_database, take_from_backlog());
+                _current = quince::make_unique<query_result>(_database, take_from_backlog());
             else if (PGresult *gotten = PQgetResult(_conn))
                 _backlog.push(gotten);
             else if (PGresult *fetched = fetch())
@@ -498,7 +497,7 @@ result_stream
 session_impl::new_result_stream(const string &cursor_name, uint32_t fetch_size) {
     assert(!_asynchronous_stream);
 
-    _asynchronous_stream = make_unique<result_stream_impl>(
+    _asynchronous_stream = quince::make_unique<result_stream_impl>(
         _database,
         cursor_name,
         _conn,

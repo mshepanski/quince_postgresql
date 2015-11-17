@@ -17,7 +17,6 @@
 using namespace quince;
 using boost::optional;
 using boost::posix_time::ptime;
-using std::make_unique;
 using std::string;
 using std::to_string;
 using std::unique_ptr;
@@ -33,7 +32,7 @@ dialect_sql::dialect_sql(const database &db) :
 
 unique_ptr<cloneable>
 dialect_sql::clone_impl() const {
-    return make_unique<dialect_sql>(*this);
+    return quince::make_unique<dialect_sql>(*this);
 }
 
 void
