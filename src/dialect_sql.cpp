@@ -9,7 +9,7 @@
 #include <quince/exprn_mappers/detail/exprn_mapper.h>
 #include <quince/exprn_mappers/collective.h>
 #include <quince/mappers/optional_mapper.h>
-#include <quince/detail/compiler_specific.h>
+#include <quince/detail/util.h>
 #include <quince/query.h>
 #include <quince_postgresql/database.h>
 #include <quince_postgresql/detail/dialect_sql.h>

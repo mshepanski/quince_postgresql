@@ -14,8 +14,8 @@
 #include <libpq/libpq-fs.h>
 #include <quince/detail/column_type.h>
 #include <quince/exceptions.h>
-#include <quince/detail/compiler_specific.h>
 #include <quince/detail/row.h>
+#include <quince/detail/util.h>
 #include <quince_postgresql/database.h>
 #include <quince_postgresql/detail/dialect_sql.h>
 #include <quince_postgresql/detail/session.h>
