@@ -405,7 +405,7 @@ session_impl::next_output(const result_stream &rs) {
     assert(rsi);
     if (rsi != _asynchronous_stream) {
         absorb_pending_results();
-        assert(_asynchronous_stream);
+        assert(! _asynchronous_stream);
         _asynchronous_stream = rsi;
     }
     return rsi->next();
