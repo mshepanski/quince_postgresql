@@ -40,6 +40,7 @@ using std::vector;
 #define OIDOID 26
 #define FLOAT4OID 700
 #define FLOAT8OID 701
+#define TIMEOID 1083
 #define TIMESTAMPOID 1114
 #define VOIDOID 2278
 #define TSVECTOROID 3614
@@ -58,6 +59,7 @@ namespace {
             case column_type::big_int:          return INT8OID;
             case column_type::floating_point:   return FLOAT4OID;
             case column_type::double_precision: return FLOAT8OID;
+            case column_type::time_type:        return TIMEOID;
             case column_type::timestamp:        return TIMESTAMPOID;
             case column_type::string:           return TEXTOID;
             case column_type::byte_vector:      return BYTEAOID;
@@ -75,6 +77,7 @@ namespace {
             case INT8OID:       return column_type::big_int;
             case FLOAT4OID:     return column_type::floating_point;
             case FLOAT8OID:     return column_type::double_precision;
+            case TIMEOID:       return column_type::time_type;
             case TIMESTAMPOID:  return column_type::timestamp;
             case TEXTOID:       return column_type::string;
             case BYTEAOID:      return column_type::byte_vector;
