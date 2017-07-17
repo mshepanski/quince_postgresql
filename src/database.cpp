@@ -5,6 +5,7 @@
 
 #include <pg_config_manual.h>  // for NAMEDATALEN
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/gregorian/gregorian.hpp>
 #include <quince/exceptions.h>
 #include <quince/detail/compiler_specific.h>
 #include <quince/detail/session.h>
@@ -20,6 +21,8 @@
 
 using boost::optional;
 using boost::posix_time::ptime;
+using boost::posix_time::time_duration;
+using boost::gregorian::date;
 using namespace quince;
 using std::dynamic_pointer_cast;
 using std::shared_ptr;
@@ -64,6 +67,68 @@ namespace {
         }
     };
 
+    class time_mapper : public abstract_mapper<time_duration>, public direct_mapper<time_type>
+    {
+    public:
+        explicit time_mapper(const optional<string> &name, const mapper_factory &creator) :
+            abstract_mapper_base(name),
+            abstract_mapper<time_duration>(name),
+            direct_mapper<time_type>(name, creator)
+        {}
+
+        virtual std::unique_ptr<cloneable>
+        clone_impl() const override {
+            return quince::make_unique<time_mapper>(*this);
+        }
+
+        virtual void from_row(const row &src, time_duration &dest) const override {
+            time_type text;
+            direct_mapper<time_type>::from_row(src, text);
+            dest = boost::posix_time::duration_from_string(text);
+        }
+
+        virtual void to_row(const time_duration &src, row &dest) const override {
+            const time_type text(boost::posix_time::to_simple_string(src));
+            direct_mapper<time_type>::to_row(text, dest);
+        }
+
+    protected:
+        virtual void build_match_tester(const query_base &qb, predicate &result) const override {
+            abstract_mapper<time_duration>::build_match_tester(qb, result);
+        }
+    };
+
+    class date_mapper : public abstract_mapper<date>, public direct_mapper<date_type>
+    {
+    public:
+        explicit date_mapper(const optional<string> &name, const mapper_factory &creator) :
+            abstract_mapper_base(name),
+            abstract_mapper<date>(name),
+            direct_mapper<date_type>(name, creator)
+        {}
+
+        virtual std::unique_ptr<cloneable>
+        clone_impl() const override {
+            return quince::make_unique<date_mapper>(*this);
+        }
+
+        virtual void from_row(const row &src, date&dest) const override {
+            date_type text;
+            direct_mapper<date_type>::from_row(src, text);
+            dest = boost::gregorian::from_string(text);
+        }
+
+        virtual void to_row(const date &src, row &dest) const override {
+            const date_type text(boost::gregorian::to_simple_string(src));
+            direct_mapper<date_type>::to_row(text, dest);
+        }
+
+    protected:
+        virtual void build_match_tester(const query_base &qb, predicate &result) const override {
+            abstract_mapper<date>::build_match_tester(qb, result);
+        }
+    };
+
     struct customization_for_dbms : mapping_customization {
         customization_for_dbms() {
             customize<bool, direct_mapper<bool>>();
@@ -81,6 +146,8 @@ namespace {
             customize<byte_vector, direct_mapper<byte_vector>>();
             customize<serial, serial_mapper>();
             customize<ptime, ptime_mapper>();
+            customize<time_duration, time_mapper>();
+            customize<date, date_mapper>();
         }
     };
 
@@ -202,6 +269,8 @@ database::column_type_name(column_type type) const {
         case column_type::double_precision: return "double precision";
         case column_type::string:           return "text";
         case column_type::timestamp:        return "timestamp";
+        case column_type::time_type:        return "time";
+        case column_type::date_type:        return "date";
         case column_type::byte_vector:      return "bytea";
         default:                            abort();
     }
