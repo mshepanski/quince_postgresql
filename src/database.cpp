@@ -148,6 +148,8 @@ namespace {
             customize<ptime, ptime_mapper>();
             customize<time_duration, time_mapper>();
             customize<date, date_mapper>();
+            customize<json_type, direct_mapper<json_type>>();
+            customize<jsonb_type, direct_mapper<jsonb_type>>();
         }
     };
 
@@ -271,6 +273,8 @@ database::column_type_name(column_type type) const {
         case column_type::timestamp:        return "timestamp";
         case column_type::time_type:        return "time";
         case column_type::date_type:        return "date";
+        case column_type::json_type:        return "json";
+        case column_type::jsonb_type:       return "jsonb";
         case column_type::byte_vector:      return "bytea";
         default:                            abort();
     }

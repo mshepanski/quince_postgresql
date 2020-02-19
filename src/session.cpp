@@ -41,6 +41,8 @@ using std::vector;
 #define FLOAT4OID 700
 #define FLOAT8OID 701
 #define DATEOID 1082
+#define JSONOID 114
+#define JSONBOID 3802
 #define TIMEOID 1083
 #define TIMESTAMPOID 1114
 #define VOIDOID 2278
@@ -61,6 +63,8 @@ namespace {
             case column_type::floating_point:   return FLOAT4OID;
             case column_type::double_precision: return FLOAT8OID;
             case column_type::date_type:        return DATEOID;
+            case column_type::json_type:        return JSONOID;
+            case column_type::jsonb_type:       return JSONBOID;
             case column_type::time_type:        return TIMEOID;
             case column_type::timestamp:        return TIMESTAMPOID;
             case column_type::string:           return TEXTOID;
@@ -80,6 +84,8 @@ namespace {
             case FLOAT4OID:     return column_type::floating_point;
             case FLOAT8OID:     return column_type::double_precision;
             case DATEOID:       return column_type::date_type;
+            case JSONOID:       return column_type::json_type;
+            case JSONBOID:      return column_type::jsonb_type;
             case TIMEOID:       return column_type::time_type;
             case TIMESTAMPOID:  return column_type::timestamp;
             case TEXTOID:       return column_type::string;

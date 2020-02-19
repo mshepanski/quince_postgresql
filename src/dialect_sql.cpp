@@ -251,6 +251,10 @@ dialect_sql::attach_value(const cell &value) {
         sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
     else if (value.type() == column_type::date_type)
         sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
+    else if (value.type() == column_type::json_type)
+       sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
+    else if (value.type() == column_type::jsonb_type)
+       sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
     else if (value.type() == column_type::time_type)
         sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
     else
@@ -267,6 +271,8 @@ dialect_sql::next_value_reference(const cell &value) {
     string result = sql::next_value_reference(value);
     if (value.type() == column_type::timestamp)  result += "::timestamp";
     if (value.type() == column_type::date_type)  result += "::date";
+    if (value.type() == column_type::json_type)  result += "::json";
+    if (value.type() == column_type::jsonb_type) result += "::json";
     if (value.type() == column_type::time_type)  result += "::time";
     return result;
 }
