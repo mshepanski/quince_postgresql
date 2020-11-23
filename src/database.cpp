@@ -23,6 +23,7 @@ using boost::optional;
 using boost::posix_time::ptime;
 using boost::posix_time::time_duration;
 using boost::gregorian::date;
+using boost::multiprecision::cpp_dec_float_100;
 using namespace quince;
 using std::dynamic_pointer_cast;
 using std::shared_ptr;
@@ -129,6 +130,37 @@ namespace {
         }
     };
 
+    class numeric_mapper : public abstract_mapper<cpp_dec_float_100>, public direct_mapper<numeric_type>
+    {
+    public:
+        explicit numeric_mapper(const optional<string> &name, const mapper_factory &creator) :
+            abstract_mapper_base(name),
+            abstract_mapper<cpp_dec_float_100>(name),
+            direct_mapper<numeric_type>(name, creator)
+        {}
+
+        virtual std::unique_ptr<cloneable>
+        clone_impl() const override {
+            return quince::make_unique<numeric_mapper>(*this);
+        }
+
+        virtual void from_row(const row &src, cpp_dec_float_100&dest) const override {
+            numeric_type text;
+            direct_mapper<numeric_type>::from_row(src, text);
+            dest = cpp_dec_float_100(static_cast<const std::string&>(text));
+        }
+
+        virtual void to_row(const cpp_dec_float_100 &src, row &dest) const override {
+            const numeric_type text(src.str(0, std::ios_base::fixed));
+            direct_mapper<numeric_type>::to_row(text, dest);
+        }
+
+    protected:
+        virtual void build_match_tester(const query_base &qb, predicate &result) const override {
+            abstract_mapper<cpp_dec_float_100>::build_match_tester(qb, result);
+        }
+    };
+
     struct customization_for_dbms : mapping_customization {
         customization_for_dbms() {
             customize<bool, direct_mapper<bool>>();
@@ -150,6 +182,7 @@ namespace {
             customize<date, date_mapper>();
             customize<json_type, direct_mapper<json_type>>();
             customize<jsonb_type, direct_mapper<jsonb_type>>();
+            customize<cpp_dec_float_100, numeric_mapper>();
         }
     };
 
@@ -275,6 +308,7 @@ database::column_type_name(column_type type) const {
         case column_type::date_type:        return "date";
         case column_type::json_type:        return "json";
         case column_type::jsonb_type:       return "jsonb";
+        case column_type::numeric_type:     return "numeric";
         case column_type::byte_vector:      return "bytea";
         default:                            abort();
     }
