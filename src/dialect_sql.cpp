@@ -142,10 +142,16 @@ namespace {
             || maps_to<optional<timestamp>>(c)
             || maps_to<optional<ptime>>(c);
     }
+
+    bool
+    is_numeric_column(const column_mapper &c) {
+        return maps_to<boost::multiprecision::cpp_dec_float_100>(c)
+            || maps_to<optional<boost::multiprecision::cpp_dec_float_100>>(c);
+    }
 }
 
 void
-dialect_sql::write_timestamp_select_list_item(const column_mapper &c) {
+dialect_sql::write_cast_select_list_item(const column_mapper &c) {
     if (alias_is_defined(c.id())) {
         write(c.alias() + "::" + column_type_name(column_type::string));
     }
@@ -157,8 +163,8 @@ dialect_sql::write_timestamp_select_list_item(const column_mapper &c) {
 
 void
 dialect_sql::write_select_list_item(const column_mapper &c) {
-    if (is_timestamp_column(c) && !nested_select())
-        write_timestamp_select_list_item(c);
+    if ((is_timestamp_column(c) || is_numeric_column(c)) && !nested_select())
+        write_cast_select_list_item(c);
     else
         sql::write_select_list_item(c);
 }
