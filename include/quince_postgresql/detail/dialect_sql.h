@@ -80,7 +80,7 @@ public:
     void write_set_session_characteristics(isolation_level);
 
 private:
-    void write_timestamp_select_list_item(const quince::column_mapper &c);
+    void write_cast_select_list_item(const quince::column_mapper &c);
     virtual void attach_value(const quince::cell &) override;
     virtual std::string next_placeholder() override;
     virtual std::string next_value_reference(const quince::cell &) override;
