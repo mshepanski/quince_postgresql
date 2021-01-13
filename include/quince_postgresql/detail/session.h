@@ -26,9 +26,9 @@ enum class isolation_level {
 class session_impl : public quince::abstract_session_impl {
 public:
     struct spec {
-        std::string _host;
-        std::string _user;
-        std::string _password;
+        boost::optional<std::string> _host;
+        boost::optional<std::string> _user;
+        boost::optional<std::string> _password;
         boost::optional<std::string> _db_name;
         boost::optional<std::string> _default_schema;
         boost::optional<std::string> _port;

@@ -208,9 +208,9 @@ database::database(
         quince::make_unique<customization_for_dbms>()
     ),
     _spec({
-        host,
-        user,
-        password,
+        to_optional(host),
+        to_optional(user),
+        to_optional(password),
         to_optional(db_name),
         to_optional(default_schema),
         to_optional(port),

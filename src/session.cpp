@@ -344,12 +344,18 @@ private:
 string
 session_impl::spec::connection_string() const {
     stringstream strm;
-    strm << "host=" << _host << " user=" << _user << " password=" << _password;
+    if (_host)
+        strm << " host=" << *_host;
+    if (_user)
+        strm << " user=" << *_user;
+    if (_password)
+        strm << " password=" << *_password;
     if (_port)
         strm << " port=" << *_port;
     if (_db_name)
         strm << " dbname=" << *_db_name;
-    return strm.str();
+    string str = strm.str();
+    return str.empty() ? str : str.substr(1);
 }
 
 extern "C" {
