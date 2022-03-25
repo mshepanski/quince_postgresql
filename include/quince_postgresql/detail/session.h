@@ -43,6 +43,7 @@ public:
 
     virtual bool                            unchecked_exec(const quince::sql &) override;
     virtual void                            exec(const quince::sql &) override;
+    virtual std::uint64_t                   exec_with_count_output(const quince::sql &) override;
     virtual quince::result_stream           exec_with_stream_output(const quince::sql &, uint32_t fetch_size) override;
     virtual std::unique_ptr<quince::row>    exec_with_one_output(const quince::sql &) override;
     virtual std::unique_ptr<quince::row>    next_output(const quince::result_stream &) override;

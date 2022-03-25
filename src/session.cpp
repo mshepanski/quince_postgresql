@@ -419,6 +419,16 @@ session_impl::exec(const sql &cmd) {
     check_no_output(pq_exec(cmd));
 }
 
+std::uint64_t
+session_impl::exec_with_count_output(const sql &cmd) {
+    absorb_pending_results();
+    PGresult* result = pq_exec(cmd);
+    char* tuples = PQcmdTuples(result);
+    std::uint64_t count = (tuples && *tuples) ? strtoull(tuples, nullptr, 10) : 0;
+    check_no_output(result);
+    return count;
+}
+
 unique_ptr<row>
 session_impl::next_output(const result_stream &rs) {
     assert(rs);
