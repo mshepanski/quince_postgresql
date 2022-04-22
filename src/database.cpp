@@ -151,7 +151,7 @@ namespace {
         }
 
         virtual void to_row(const cpp_dec_float_100 &src, row &dest) const override {
-            const numeric_type text(src.str(0, std::ios_base::fixed));
+            const numeric_type text(src.str(std::numeric_limits<cpp_dec_float_100>::digits10));
             direct_mapper<numeric_type>::to_row(text, dest);
         }
 
