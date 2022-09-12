@@ -139,7 +139,9 @@ namespace {
     is_timestamp_column(const column_mapper &c) {
         return maps_to<timestamp>(c)
             || maps_to<ptime>(c)
+            || maps_to<timestamp_with_tz>(c)
             || maps_to<optional<timestamp>>(c)
+            || maps_to<optional<timestamp_with_tz>>(c)
             || maps_to<optional<ptime>>(c);
     }
 
@@ -265,6 +267,8 @@ dialect_sql::attach_value(const cell &value) {
         sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
     else if (value.type() == column_type::numeric_type)
         sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
+    else if (value.type() == column_type::timestamp_with_tz)
+        sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
     else
         sql::attach_value(value);
 }
@@ -277,12 +281,13 @@ dialect_sql::next_placeholder() {
 string
 dialect_sql::next_value_reference(const cell &value) {
     string result = sql::next_value_reference(value);
-    if (value.type() == column_type::timestamp)  result += "::timestamp";
-    if (value.type() == column_type::date_type)  result += "::date";
-    if (value.type() == column_type::json_type)  result += "::json";
-    if (value.type() == column_type::jsonb_type) result += "::json";
-    if (value.type() == column_type::time_type)  result += "::time";
-    if (value.type() == column_type::numeric_type) result += "::numeric";
+    if (value.type() == column_type::timestamp)          result += "::timestamp";
+    if (value.type() == column_type::date_type)          result += "::date";
+    if (value.type() == column_type::json_type)          result += "::json";
+    if (value.type() == column_type::jsonb_type)         result += "::json";
+    if (value.type() == column_type::time_type)          result += "::time";
+    if (value.type() == column_type::numeric_type)       result += "::numeric";
+    if (value.type() == column_type::timestamp_with_tz)  result += "::timestamptz";
     return result;
 }
 

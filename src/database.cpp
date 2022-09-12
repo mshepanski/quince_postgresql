@@ -6,6 +6,8 @@
 #include <pg_config_manual.h>  // for NAMEDATALEN
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
+#include <date/date.h>
+#include <date/tz.h>
 #include <quince/exceptions.h>
 #include <quince/detail/compiler_specific.h>
 #include <quince/detail/session.h>
@@ -18,12 +20,14 @@
 #include <quince/mappers/serial_mapper.h>
 #include <quince_postgresql/database.h>
 #include <quince_postgresql/detail/dialect_sql.h>
+#include <sstream>
+#include <chrono>
 
 using boost::optional;
 using boost::posix_time::ptime;
 using boost::posix_time::time_duration;
-using boost::gregorian::date;
 using boost::multiprecision::cpp_dec_float_100;
+using date::zoned_time;
 using namespace quince;
 using std::dynamic_pointer_cast;
 using std::shared_ptr;
@@ -99,12 +103,12 @@ namespace {
         }
     };
 
-    class date_mapper : public abstract_mapper<date>, public direct_mapper<date_type>
+    class date_mapper : public abstract_mapper<boost::gregorian::date>, public direct_mapper<date_type>
     {
     public:
         explicit date_mapper(const optional<string> &name, const mapper_factory &creator) :
             abstract_mapper_base(name),
-            abstract_mapper<date>(name),
+            abstract_mapper<boost::gregorian::date>(name),
             direct_mapper<date_type>(name, creator)
         {}
 
@@ -113,20 +117,20 @@ namespace {
             return quince::make_unique<date_mapper>(*this);
         }
 
-        virtual void from_row(const row &src, date&dest) const override {
+        virtual void from_row(const row &src, boost::gregorian::date&dest) const override {
             date_type text;
             direct_mapper<date_type>::from_row(src, text);
             dest = boost::gregorian::from_string(text);
         }
 
-        virtual void to_row(const date &src, row &dest) const override {
+        virtual void to_row(const boost::gregorian::date &src, row &dest) const override {
             const date_type text(boost::gregorian::to_simple_string(src));
             direct_mapper<date_type>::to_row(text, dest);
         }
 
     protected:
         virtual void build_match_tester(const query_base &qb, predicate &result) const override {
-            abstract_mapper<date>::build_match_tester(qb, result);
+            abstract_mapper<boost::gregorian::date>::build_match_tester(qb, result);
         }
     };
 
@@ -161,6 +165,45 @@ namespace {
         }
     };
 
+    template <typename DurationT>
+    class timestamp_with_tz_mapper : public abstract_mapper<zoned_time<DurationT>>, public direct_mapper<timestamp_with_tz>
+    {
+    public:
+        explicit timestamp_with_tz_mapper(const optional<string> &name, const mapper_factory &creator) :
+            abstract_mapper_base(name),
+            abstract_mapper<zoned_time<DurationT>>(name),
+            direct_mapper<timestamp_with_tz>(name, creator)
+        {}
+
+        virtual std::unique_ptr<cloneable>
+        clone_impl() const override {
+            return quince::make_unique<timestamp_with_tz_mapper>(*this);
+        }
+
+        virtual void from_row(const row &src, zoned_time<DurationT> &dest) const override {
+            timestamp_with_tz text;
+            direct_mapper<timestamp_with_tz>::from_row(src, text);
+            std::stringstream ss;
+            ss << std::string(text);
+            std::chrono::sys_time<DurationT> time_point;
+            ss >> date::parse("%F %T", time_point);
+            dest = date::make_zoned(time_point);
+        }
+
+        virtual void to_row(const zoned_time<DurationT>& src, row &dest) const override {
+            timestamp_with_tz text;
+            std::stringstream ss;
+            ss << date::format("%F %T %z", src);
+            text = ss.str();
+            direct_mapper<timestamp_with_tz>::to_row(text, dest);
+        }
+
+    protected:
+        virtual void build_match_tester(const query_base &qb, predicate &result) const override {
+            abstract_mapper<zoned_time<DurationT>>::build_match_tester(qb, result);
+        }
+    };
+
     struct customization_for_dbms : mapping_customization {
         customization_for_dbms() {
             customize<bool, direct_mapper<bool>>();
@@ -179,10 +222,12 @@ namespace {
             customize<serial, serial_mapper>();
             customize<ptime, ptime_mapper>();
             customize<time_duration, time_mapper>();
-            customize<date, date_mapper>();
+            customize<boost::gregorian::date, date_mapper>();
             customize<json_type, direct_mapper<json_type>>();
             customize<jsonb_type, direct_mapper<jsonb_type>>();
             customize<cpp_dec_float_100, numeric_mapper>();
+            customize<zoned_time<std::chrono::milliseconds>, timestamp_with_tz_mapper<std::chrono::milliseconds>>();
+            customize<zoned_time<std::chrono::microseconds>, timestamp_with_tz_mapper<std::chrono::microseconds>>();
         }
     };
 
@@ -295,21 +340,22 @@ database::insert_with_readback(unique_ptr<sql> insert, const serial_mapper &read
 string
 database::column_type_name(column_type type) const {
     switch (type)   {
-        case column_type::boolean:          return "boolean";
-        case column_type::small_int:        return "smallint";
-        case column_type::integer:          return "integer";
-        case column_type::big_int:          return "bigint";
-        case column_type::big_serial:       return "bigserial";
-        case column_type::floating_point:   return "real";
-        case column_type::double_precision: return "double precision";
-        case column_type::string:           return "text";
-        case column_type::timestamp:        return "timestamp";
-        case column_type::time_type:        return "time";
-        case column_type::date_type:        return "date";
-        case column_type::json_type:        return "json";
-        case column_type::jsonb_type:       return "jsonb";
-        case column_type::numeric_type:     return "numeric";
-        case column_type::byte_vector:      return "bytea";
+        case column_type::boolean:              return "boolean";
+        case column_type::small_int:            return "smallint";
+        case column_type::integer:              return "integer";
+        case column_type::big_int:              return "bigint";
+        case column_type::big_serial:           return "bigserial";
+        case column_type::floating_point:       return "real";
+        case column_type::double_precision:     return "double precision";
+        case column_type::string:               return "text";
+        case column_type::timestamp:            return "timestamp";
+        case column_type::time_type:            return "time";
+        case column_type::date_type:            return "date";
+        case column_type::json_type:            return "json";
+        case column_type::jsonb_type:           return "jsonb";
+        case column_type::numeric_type:         return "numeric";
+        case column_type::byte_vector:          return "bytea";
+        case column_type::timestamp_with_tz:    return "timestamp with time zone";
         default:                            abort();
     }
 }

@@ -49,6 +49,7 @@ using std::vector;
 #define TSVECTOROID 3614
 #define UNKNOWNOID 705
 #define NUMERICOID 1700
+#define TIMESTAMPTZOID 1184
 
 
 namespace quince_postgresql {
@@ -57,21 +58,22 @@ namespace {
     Oid
     standard_type_oid(column_type type) {
         switch (type) {
-            case column_type::boolean:          return BOOLOID;
-            case column_type::small_int:        return INT2OID;
-            case column_type::integer:          return INT4OID;
-            case column_type::big_int:          return INT8OID;
-            case column_type::floating_point:   return FLOAT4OID;
-            case column_type::double_precision: return FLOAT8OID;
-            case column_type::date_type:        return DATEOID;
-            case column_type::json_type:        return JSONOID;
-            case column_type::jsonb_type:       return JSONBOID;
-            case column_type::time_type:        return TIMEOID;
-            case column_type::timestamp:        return TIMESTAMPOID;
-            case column_type::string:           return TEXTOID;
-            case column_type::numeric_type:     return NUMERICOID;
-            case column_type::byte_vector:      return BYTEAOID;
-            case column_type::none:             return VOIDOID;
+            case column_type::boolean:              return BOOLOID;
+            case column_type::small_int:            return INT2OID;
+            case column_type::integer:              return INT4OID;
+            case column_type::big_int:              return INT8OID;
+            case column_type::floating_point:       return FLOAT4OID;
+            case column_type::double_precision:     return FLOAT8OID;
+            case column_type::date_type:            return DATEOID;
+            case column_type::json_type:            return JSONOID;
+            case column_type::jsonb_type:           return JSONBOID;
+            case column_type::time_type:            return TIMEOID;
+            case column_type::timestamp:            return TIMESTAMPOID;
+            case column_type::string:               return TEXTOID;
+            case column_type::numeric_type:         return NUMERICOID;
+            case column_type::byte_vector:          return BYTEAOID;
+            case column_type::timestamp_with_tz:    return TIMESTAMPTZOID;
+            case column_type::none:                 return VOIDOID;
             default:                            abort();
         }
     }
@@ -79,22 +81,23 @@ namespace {
     column_type
     get_column_type(Oid type_oid)  {
         switch (type_oid) {
-            case BOOLOID:       return column_type::boolean;
-            case INT2OID:       return column_type::small_int;
-            case INT4OID:       return column_type::integer;
-            case INT8OID:       return column_type::big_int;
-            case FLOAT4OID:     return column_type::floating_point;
-            case FLOAT8OID:     return column_type::double_precision;
-            case DATEOID:       return column_type::date_type;
-            case JSONOID:       return column_type::json_type;
-            case JSONBOID:      return column_type::jsonb_type;
-            case TIMEOID:       return column_type::time_type;
-            case TIMESTAMPOID:  return column_type::timestamp;
-            case TEXTOID:       return column_type::string;
-            case NUMERICOID:    return column_type::numeric_type;
-            case BYTEAOID:      return column_type::byte_vector;
-            case VOIDOID:       return column_type::none;
-            default:            throw retrieved_unrecognized_type_exception(type_oid);
+            case BOOLOID:           return column_type::boolean;
+            case INT2OID:           return column_type::small_int;
+            case INT4OID:           return column_type::integer;
+            case INT8OID:           return column_type::big_int;
+            case FLOAT4OID:         return column_type::floating_point;
+            case FLOAT8OID:         return column_type::double_precision;
+            case DATEOID:           return column_type::date_type;
+            case JSONOID:           return column_type::json_type;
+            case JSONBOID:          return column_type::jsonb_type;
+            case TIMEOID:           return column_type::time_type;
+            case TIMESTAMPOID:      return column_type::timestamp;
+            case TEXTOID:           return column_type::string;
+            case NUMERICOID:        return column_type::numeric_type;
+            case BYTEAOID:          return column_type::byte_vector;
+            case TIMESTAMPTZOID:    return column_type::timestamp_with_tz; 
+            case VOIDOID:           return column_type::none;
+            default:                throw retrieved_unrecognized_type_exception(type_oid);
         }
     }
 
