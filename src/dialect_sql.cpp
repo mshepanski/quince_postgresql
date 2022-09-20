@@ -150,6 +150,13 @@ namespace {
         return maps_to<boost::multiprecision::cpp_dec_float_100>(c)
             || maps_to<optional<boost::multiprecision::cpp_dec_float_100>>(c);
     }
+
+    bool
+    is_array_column(const column_mapper &c) {
+        return maps_to<array_of_int16>(c)
+            || maps_to<array_of_int32>(c)  
+            || maps_to<array_of_int64>(c);
+    }
 }
 
 void
@@ -165,7 +172,7 @@ dialect_sql::write_cast_select_list_item(const column_mapper &c) {
 
 void
 dialect_sql::write_select_list_item(const column_mapper &c) {
-    if ((is_timestamp_column(c) || is_numeric_column(c)) && !nested_select())
+    if ((is_timestamp_column(c) || is_numeric_column(c)) || is_array_column(c) && !nested_select())
         write_cast_select_list_item(c);
     else
         sql::write_select_list_item(c);
@@ -269,6 +276,12 @@ dialect_sql::attach_value(const cell &value) {
         sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
     else if (value.type() == column_type::timestamp_with_tz)
         sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
+    else if (value.type() == column_type::array_of_int16)
+        sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
+    else if (value.type() == column_type::array_of_int32)
+        sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
+    else if (value.type() == column_type::array_of_int64)
+        sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
     else
         sql::attach_value(value);
 }
@@ -288,6 +301,10 @@ dialect_sql::next_value_reference(const cell &value) {
     if (value.type() == column_type::time_type)          result += "::time";
     if (value.type() == column_type::numeric_type)       result += "::numeric";
     if (value.type() == column_type::timestamp_with_tz)  result += "::timestamptz";
+    if (value.type() == column_type::array_of_int16)     result += "::_int2";
+    if (value.type() == column_type::array_of_int32)     result += "::_int4";
+    if (value.type() == column_type::array_of_int64)     result += "::_int8";
+
     return result;
 }
 

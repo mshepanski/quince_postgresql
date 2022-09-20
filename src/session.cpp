@@ -50,6 +50,9 @@ using std::vector;
 #define UNKNOWNOID 705
 #define NUMERICOID 1700
 #define TIMESTAMPTZOID 1184
+#define ARRAYOFINT2OID 1005
+#define ARRAYOFINT4OID 1007
+#define ARRAYOFINT8OID 1016
 
 
 namespace quince_postgresql {
@@ -73,6 +76,9 @@ namespace {
             case column_type::numeric_type:         return NUMERICOID;
             case column_type::byte_vector:          return BYTEAOID;
             case column_type::timestamp_with_tz:    return TIMESTAMPTZOID;
+            case column_type::array_of_int16:       return ARRAYOFINT2OID;
+            case column_type::array_of_int32:       return ARRAYOFINT4OID;
+            case column_type::array_of_int64:       return ARRAYOFINT8OID;
             case column_type::none:                 return VOIDOID;
             default:                            abort();
         }
@@ -95,6 +101,10 @@ namespace {
             case TEXTOID:           return column_type::string;
             case NUMERICOID:        return column_type::numeric_type;
             case BYTEAOID:          return column_type::byte_vector;
+            case TIMESTAMPTZOID:    return column_type::timestamp_with_tz;
+            case ARRAYOFINT2OID:    return column_type::array_of_int16;
+            case ARRAYOFINT4OID:    return column_type::array_of_int32;
+            case ARRAYOFINT8OID:    return column_type::array_of_int64;
             case TIMESTAMPTZOID:    return column_type::timestamp_with_tz; 
             case VOIDOID:           return column_type::none;
             default:                throw retrieved_unrecognized_type_exception(type_oid);

@@ -6,7 +6,6 @@
 #include <pg_config_manual.h>  // for NAMEDATALEN
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
-#include <date/date.h>
 #include <date/tz.h>
 #include <quince/exceptions.h>
 #include <quince/detail/compiler_specific.h>
@@ -22,6 +21,8 @@
 #include <quince_postgresql/detail/dialect_sql.h>
 #include <sstream>
 #include <chrono>
+#include <vector>
+
 
 using boost::optional;
 using boost::posix_time::ptime;
@@ -204,6 +205,53 @@ namespace {
         }
     };
 
+    template <typename IntT, typename ArrayT>
+    class array_of_int_mapper : public abstract_mapper<std::vector<IntT>>, public direct_mapper<ArrayT>
+    {
+    public:
+        explicit array_of_int_mapper(const optional<string> &name, const mapper_factory &creator) :
+            abstract_mapper_base(name),
+            abstract_mapper<std::vector<IntT>>(name),
+            direct_mapper<ArrayT>(name, creator)
+        {}
+
+        virtual std::unique_ptr<cloneable>
+        clone_impl() const override {
+            return quince::make_unique<array_of_int_mapper<IntT,ArrayT>>(*this);
+        }
+
+        virtual void from_row(const row &src, std::vector<IntT> &dest) const override {
+            ArrayT text;
+            direct_mapper<ArrayT>::from_row(src, text);
+            std::stringstream ss(std::string(text).substr(1, std::string(text).size() -2));
+            if(!ss.str().empty()) {
+                IntT num;
+                while(ss >> num) {
+                    dest.push_back(num);
+                    ss.ignore(1, ',');
+                }
+            }
+        }
+
+        virtual void to_row(const std::vector<IntT>& src, row &dest) const override {
+            ArrayT text;
+            std::stringstream ss;
+            ss << "{";
+            if (!src.empty()) {
+                std::copy(std::begin(src), std::end(src)-1, std::ostream_iterator<IntT>(ss, ","));
+                ss << src.back();
+            }
+            ss << "}";
+            text = ss.str();
+            direct_mapper<ArrayT>::to_row(text, dest);
+        }
+
+    protected:
+        virtual void build_match_tester(const query_base &qb, predicate &result) const override {
+            abstract_mapper<std::vector<IntT>>::build_match_tester(qb, result);
+        }
+    };
+
     struct customization_for_dbms : mapping_customization {
         customization_for_dbms() {
             customize<bool, direct_mapper<bool>>();
@@ -228,6 +276,9 @@ namespace {
             customize<cpp_dec_float_100, numeric_mapper>();
             customize<zoned_time<std::chrono::milliseconds>, timestamp_with_tz_mapper<std::chrono::milliseconds>>();
             customize<zoned_time<std::chrono::microseconds>, timestamp_with_tz_mapper<std::chrono::microseconds>>();
+            customize<std::vector<std::int16_t>, array_of_int_mapper<std::int16_t, array_of_int16>>();
+            customize<std::vector<std::int32_t>, array_of_int_mapper<std::int32_t, array_of_int32>>();
+            customize<std::vector<std::int64_t>, array_of_int_mapper<std::int64_t, array_of_int64>>();
         }
     };
 
@@ -356,7 +407,10 @@ database::column_type_name(column_type type) const {
         case column_type::numeric_type:         return "numeric";
         case column_type::byte_vector:          return "bytea";
         case column_type::timestamp_with_tz:    return "timestamp with time zone";
-        default:                            abort();
+        case column_type::array_of_int16:       return "smallint[]";
+        case column_type::array_of_int32:       return "integer[]";
+        case column_type::array_of_int64:       return "bigint[]";
+        default:                                abort();
     }
 }
 
