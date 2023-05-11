@@ -3,6 +3,7 @@
 //    (See accompanying file ../LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
+#include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/date_time/posix_time/ptime.hpp>
 #include <quince/detail/binomen.h>
 #include <quince/mappers/detail/persistent_column_mapper.h>
@@ -17,6 +18,7 @@
 using namespace quince;
 using boost::optional;
 using boost::posix_time::ptime;
+using boost::posix_time::time_duration;
 using std::string;
 using std::to_string;
 using std::unique_ptr;
@@ -146,6 +148,22 @@ namespace {
     }
 
     bool
+    is_time_column(const column_mapper &c) {
+        return maps_to<time_duration>(c)
+            || maps_to<time_type>(c)
+            || maps_to<optional<time_duration>>(c)
+            || maps_to<optional<time_type>>(c);
+    }
+
+    bool
+    is_date_column(const column_mapper &c) {
+        return maps_to<date_type>(c)
+            || maps_to<boost::gregorian::date>(c)
+            || maps_to<optional<date_type>>(c)
+            || maps_to<optional<boost::gregorian::date>>(c);
+    }
+
+    bool
     is_numeric_column(const column_mapper &c) {
         return maps_to<boost::multiprecision::cpp_dec_float_100>(c)
             || maps_to<optional<boost::multiprecision::cpp_dec_float_100>>(c);
@@ -172,7 +190,7 @@ dialect_sql::write_cast_select_list_item(const column_mapper &c) {
 
 void
 dialect_sql::write_select_list_item(const column_mapper &c) {
-    if ((is_timestamp_column(c) || is_numeric_column(c)) || is_array_column(c) && !nested_select())
+    if ((is_timestamp_column(c) || is_time_column(c) || is_date_column(c) || is_numeric_column(c)) || is_array_column(c) && !nested_select())
         write_cast_select_list_item(c);
     else
         sql::write_select_list_item(c);
