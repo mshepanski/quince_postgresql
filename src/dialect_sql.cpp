@@ -3,6 +3,7 @@
 //    (See accompanying file ../LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
+#include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/date_time/posix_time/ptime.hpp>
 #include <quince/detail/binomen.h>
 #include <quince/mappers/detail/persistent_column_mapper.h>
@@ -17,6 +18,7 @@
 using namespace quince;
 using boost::optional;
 using boost::posix_time::ptime;
+using boost::posix_time::time_duration;
 using std::string;
 using std::to_string;
 using std::unique_ptr;
@@ -139,13 +141,44 @@ namespace {
     is_timestamp_column(const column_mapper &c) {
         return maps_to<timestamp>(c)
             || maps_to<ptime>(c)
+            || maps_to<timestamp_with_tz>(c)
             || maps_to<optional<timestamp>>(c)
+            || maps_to<optional<timestamp_with_tz>>(c)
             || maps_to<optional<ptime>>(c);
+    }
+
+    bool
+    is_time_column(const column_mapper &c) {
+        return maps_to<time_duration>(c)
+            || maps_to<time_type>(c)
+            || maps_to<optional<time_duration>>(c)
+            || maps_to<optional<time_type>>(c);
+    }
+
+    bool
+    is_date_column(const column_mapper &c) {
+        return maps_to<date_type>(c)
+            || maps_to<boost::gregorian::date>(c)
+            || maps_to<optional<date_type>>(c)
+            || maps_to<optional<boost::gregorian::date>>(c);
+    }
+
+    bool
+    is_numeric_column(const column_mapper &c) {
+        return maps_to<boost::multiprecision::cpp_dec_float_100>(c)
+            || maps_to<optional<boost::multiprecision::cpp_dec_float_100>>(c);
+    }
+
+    bool
+    is_array_column(const column_mapper &c) {
+        return maps_to<array_of_int16>(c)
+            || maps_to<array_of_int32>(c)  
+            || maps_to<array_of_int64>(c);
     }
 }
 
 void
-dialect_sql::write_timestamp_select_list_item(const column_mapper &c) {
+dialect_sql::write_cast_select_list_item(const column_mapper &c) {
     if (alias_is_defined(c.id())) {
         write(c.alias() + "::" + column_type_name(column_type::string));
     }
@@ -157,8 +190,8 @@ dialect_sql::write_timestamp_select_list_item(const column_mapper &c) {
 
 void
 dialect_sql::write_select_list_item(const column_mapper &c) {
-    if (is_timestamp_column(c) && !nested_select())
-        write_timestamp_select_list_item(c);
+    if ((is_timestamp_column(c) || is_time_column(c) || is_date_column(c) || is_numeric_column(c)) || is_array_column(c) && !nested_select())
+        write_cast_select_list_item(c);
     else
         sql::write_select_list_item(c);
 }
@@ -249,6 +282,24 @@ void
 dialect_sql::attach_value(const cell &value) {
     if (value.type() == column_type::timestamp)
         sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
+    else if (value.type() == column_type::date_type)
+        sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
+    else if (value.type() == column_type::json_type)
+       sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
+    else if (value.type() == column_type::jsonb_type)
+       sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
+    else if (value.type() == column_type::time_type)
+        sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
+    else if (value.type() == column_type::numeric_type)
+        sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
+    else if (value.type() == column_type::timestamp_with_tz)
+        sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
+    else if (value.type() == column_type::array_of_int16)
+        sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
+    else if (value.type() == column_type::array_of_int32)
+        sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
+    else if (value.type() == column_type::array_of_int64)
+        sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
     else
         sql::attach_value(value);
 }
@@ -261,7 +312,17 @@ dialect_sql::next_placeholder() {
 string
 dialect_sql::next_value_reference(const cell &value) {
     string result = sql::next_value_reference(value);
-    if (value.type() == column_type::timestamp)  result += "::timestamp";
+    if (value.type() == column_type::timestamp)          result += "::timestamp";
+    if (value.type() == column_type::date_type)          result += "::date";
+    if (value.type() == column_type::json_type)          result += "::json";
+    if (value.type() == column_type::jsonb_type)         result += "::json";
+    if (value.type() == column_type::time_type)          result += "::time";
+    if (value.type() == column_type::numeric_type)       result += "::numeric";
+    if (value.type() == column_type::timestamp_with_tz)  result += "::timestamptz";
+    if (value.type() == column_type::array_of_int16)     result += "::_int2";
+    if (value.type() == column_type::array_of_int32)     result += "::_int4";
+    if (value.type() == column_type::array_of_int64)     result += "::_int8";
+
     return result;
 }
 

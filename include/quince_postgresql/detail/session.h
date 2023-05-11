@@ -26,9 +26,9 @@ enum class isolation_level {
 class session_impl : public quince::abstract_session_impl {
 public:
     struct spec {
-        std::string _host;
-        std::string _user;
-        std::string _password;
+        boost::optional<std::string> _host;
+        boost::optional<std::string> _user;
+        boost::optional<std::string> _password;
         boost::optional<std::string> _db_name;
         boost::optional<std::string> _default_schema;
         boost::optional<std::string> _port;
@@ -43,6 +43,7 @@ public:
 
     virtual bool                            unchecked_exec(const quince::sql &) override;
     virtual void                            exec(const quince::sql &) override;
+    virtual std::uint64_t                   exec_with_count_output(const quince::sql &) override;
     virtual quince::result_stream           exec_with_stream_output(const quince::sql &, uint32_t fetch_size) override;
     virtual std::unique_ptr<quince::row>    exec_with_one_output(const quince::sql &) override;
     virtual std::unique_ptr<quince::row>    next_output(const quince::result_stream &) override;
